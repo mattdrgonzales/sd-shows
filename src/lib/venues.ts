@@ -25,12 +25,12 @@ export const VENUE_INFO: Record<string, VenueInfo> = {
     website: "https://www.quartyardsd.com",
   },
   "Bloom": {
-    address: "3812 Park Blvd, San Diego, CA 92103",
-    website: "https://www.bloomsd.com",
+    address: "919 Fourth Ave, Suite 100, San Diego, CA 92101",
+    website: "https://bloomdtsd.com",
   },
   "Nova": {
-    address: "805 16th St, San Diego, CA 92101",
-    website: "https://www.novasd.com",
+    address: "454 Sixth Ave, San Diego, CA 92101",
+    website: "https://novasd.com",
   },
   "Whistlestop": {
     address: "2236 Fern St, San Diego, CA 92104",
@@ -41,8 +41,8 @@ export const VENUE_INFO: Record<string, VenueInfo> = {
     website: "https://www.petcopark.com",
   },
   "EQ": {
-    address: "920 Eighth Ave, San Diego, CA 92101",
-    website: "https://www.eqsd.com",
+    address: "1271 University Ave, San Diego, CA 92103",
+    website: "https://www.eqsandiego.com",
   },
   "Spin Nightclub": {
     address: "2028 Hancock St, San Diego, CA 92110",
