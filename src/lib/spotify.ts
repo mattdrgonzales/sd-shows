@@ -44,6 +44,7 @@ async function searchArtistImage(
 
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
+    next: { revalidate: 86400 },
   });
 
   if (res.status === 429) {

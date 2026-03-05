@@ -1,8 +1,9 @@
 import Image from "next/image";
-import { Music } from "lucide-react";
+import { Music, MapPin, Ticket } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MusicLinks } from "@/components/music-links";
+import { VENUE_INFO } from "@/lib/venues";
 import type { Event } from "@/lib/types";
 
 function formatDate(dateStr: string): string {
@@ -37,6 +38,8 @@ function ArtistInitials({ name }: { name: string }) {
 }
 
 export function EventCard({ event }: { event: Event }) {
+  const venueInfo = VENUE_INFO[event.venue];
+
   return (
     <Card className="gap-0 py-0 overflow-hidden transition-colors hover:border-primary/30">
       <CardContent className="flex gap-0 p-0">
@@ -66,9 +69,20 @@ export function EventCard({ event }: { event: Event }) {
                 {formatDate(event.date)}
               </Badge>
             </div>
-            <p className="mt-1 truncate text-sm text-muted-foreground">
+            <a
+              href={venueInfo?.website}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-1 block truncate text-sm text-muted-foreground hover:text-primary transition-colors"
+            >
               {event.venue}
-            </p>
+            </a>
+            {venueInfo && (
+              <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-muted-foreground/70">
+                <MapPin className="size-3 shrink-0" />
+                {venueInfo.address}
+              </p>
+            )}
           </div>
           <div className="mt-2 flex items-center justify-between">
             <MusicLinks artist={event.artist} />
@@ -77,8 +91,9 @@ export function EventCard({ event }: { event: Event }) {
                 href={event.source_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs font-medium text-primary hover:underline"
+                className="inline-flex items-center gap-1 rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
               >
+                <Ticket className="size-3.5" />
                 Tickets
               </a>
             )}
