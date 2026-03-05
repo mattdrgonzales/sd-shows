@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { CalendarIcon, X } from "lucide-react";
 import { format } from "date-fns";
 import {
@@ -54,56 +54,11 @@ export function EventsPage({
   venues: string[];
   artists: string[];
 }) {
-  const [artistImages, setArtistImages] = useState<Record<string, string | null>>({});
   const [artist, setArtist] = useState("all");
   const [venue, setVenue] = useState("all");
   const [dateQuick, setDateQuick] = useState<DateQuickPick>(null);
   const [dateSpecific, setDateSpecific] = useState<Date | undefined>(undefined);
   const [calendarOpen, setCalendarOpen] = useState(false);
-
-  // Fetch artist images client-side (one at a time, Vercel edge-cached)
-  useEffect(() => {
-    if (!artists.length) return;
-    let cancelled = false;
-    const CONCURRENCY = 6;
-
-    async function fetchAll() {
-      for (let i = 0; i < artists.length; i += CONCURRENCY) {
-        if (cancelled) break;
-        const batch = artists.slice(i, i + CONCURRENCY);
-        const results = await Promise.all(
-          batch.map(async (name) => {
-            try {
-              const res = await fetch(`/api/artist-images?artist=${encodeURIComponent(name)}`);
-              if (!res.ok) return { name, image: null };
-              const data = await res.json();
-              return { name, image: data.image };
-            } catch {
-              return { name, image: null };
-            }
-          }),
-        );
-        if (cancelled) break;
-        setArtistImages((prev) => {
-          const next = { ...prev };
-          for (const r of results) next[r.name] = r.image;
-          return next;
-        });
-      }
-    }
-
-    fetchAll();
-    return () => { cancelled = true; };
-  }, [artists]);
-
-  // Merge images into events
-  const eventsWithImages = useMemo(() => {
-    if (!Object.keys(artistImages).length) return events;
-    return events.map((e) => ({
-      ...e,
-      artist_image: artistImages[e.artist] ?? e.artist_image,
-    }));
-  }, [events, artistImages]);
 
   const hasFilters = artist !== "all" || venue !== "all" || dateQuick !== null || dateSpecific !== undefined;
 
@@ -126,7 +81,7 @@ export function EventsPage({
   }
 
   const filtered = useMemo(() => {
-    return eventsWithImages.filter((e) => {
+    return events.filter((e) => {
       if (artist !== "all" && e.artist !== artist) return false;
       if (venue !== "all" && e.venue !== venue) return false;
 
@@ -141,7 +96,7 @@ export function EventsPage({
 
       return true;
     });
-  }, [eventsWithImages, artist, venue, dateQuick, dateSpecific]);
+  }, [events, artist, venue, dateQuick, dateSpecific]);
 
   const grouped = useMemo(() => {
     const map = new Map<Bucket, Event[]>();
