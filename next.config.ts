@@ -5,15 +5,15 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "i.scdn.co",
+        hostname: "*.dzcdn.net",
       },
       {
         protocol: "https",
-        hostname: "is1-ssl.mzstatic.com",
+        hostname: "commons.wikimedia.org",
       },
       {
         protocol: "https",
-        hostname: "*.mzstatic.com",
+        hostname: "upload.wikimedia.org",
       },
     ],
   },
