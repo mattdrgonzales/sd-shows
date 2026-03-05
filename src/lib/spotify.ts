@@ -1,17 +1,13 @@
+import { unstable_cache } from "next/cache";
+
 const SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token";
 const SPOTIFY_SEARCH_URL = "https://api.spotify.com/v1/search";
-
-let cachedToken: { token: string; expiresAt: number } | null = null;
 
 async function getAccessToken(): Promise<string | null> {
   const clientId = process.env.SPOTIFY_CLIENT_ID;
   const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
 
   if (!clientId || !clientSecret) return null;
-
-  if (cachedToken && Date.now() < cachedToken.expiresAt - 60_000) {
-    return cachedToken.token;
-  }
 
   const res = await fetch(SPOTIFY_TOKEN_URL, {
     method: "POST",
@@ -25,11 +21,7 @@ async function getAccessToken(): Promise<string | null> {
   if (!res.ok) return null;
 
   const data = await res.json();
-  cachedToken = {
-    token: data.access_token,
-    expiresAt: Date.now() + data.expires_in * 1000,
-  };
-  return cachedToken.token;
+  return data.access_token;
 }
 
 async function searchArtistImage(
@@ -44,7 +36,6 @@ async function searchArtistImage(
 
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
-    next: { revalidate: 86400 },
   });
 
   if (res.status === 429) {
@@ -59,7 +50,6 @@ async function searchArtistImage(
   const artists = data?.artists?.items;
   if (!artists?.length) return null;
 
-  // Pick medium-sized image (300px) or first available
   const images = artists[0].images;
   if (!images?.length) return null;
 
@@ -69,36 +59,45 @@ async function searchArtistImage(
   return (medium || images[0]).url;
 }
 
-/**
- * Batch-fetch artist images from Spotify.
- * Returns a map of artist name → image URL (or null).
- */
-export async function fetchArtistImages(
+async function _fetchArtistImages(
   artists: string[],
-): Promise<Map<string, string | null>> {
-  const result = new Map<string, string | null>();
+): Promise<Record<string, string | null>> {
+  const result: Record<string, string | null> = {};
 
   const token = await getAccessToken();
   if (!token) {
-    // No credentials — return all nulls
-    for (const a of artists) result.set(a, null);
+    for (const a of artists) result[a] = null;
     return result;
   }
 
-  const CONCURRENCY = 5;
-  const DELAY_MS = 200;
+  const CONCURRENCY = 10;
 
   for (let i = 0; i < artists.length; i += CONCURRENCY) {
     const batch = artists.slice(i, i + CONCURRENCY);
     const results = await Promise.all(
       batch.map((a) => searchArtistImage(a, token).catch(() => null)),
     );
-    batch.forEach((a, idx) => result.set(a, results[idx] ?? null));
-
-    if (i + CONCURRENCY < artists.length) {
-      await new Promise((r) => setTimeout(r, DELAY_MS));
-    }
+    batch.forEach((a, idx) => (result[a] = results[idx] ?? null));
   }
 
   return result;
+}
+
+/**
+ * Batch-fetch artist images from Spotify, cached for 1 hour.
+ */
+export async function fetchArtistImages(
+  artists: string[],
+): Promise<Map<string, string | null>> {
+  const sorted = [...artists].sort();
+  const key = sorted.join("|");
+
+  const cached = unstable_cache(
+    async () => _fetchArtistImages(sorted),
+    [`spotify-images-${key}`],
+    { revalidate: 3600 },
+  );
+
+  const record = await cached();
+  return new Map(Object.entries(record));
 }
