@@ -69,6 +69,7 @@ export async function fetchUpcomingEvents(): Promise<Event[]> {
       bucket: bucket as Bucket,
       source_url: (f.source_url as string) ?? "",
       source_name: (f.source_name as string) ?? "",
+      artist_image: null,
     });
   }
 

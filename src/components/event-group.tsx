@@ -21,7 +21,7 @@ export function EventGroup({
     <section>
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm py-3">
         <h2 className="text-lg font-semibold tracking-tight">
-          {BUCKET_LABELS[bucket]}
+          <span className="text-primary">{BUCKET_LABELS[bucket]}</span>
           <span className="ml-2 text-sm font-normal text-muted-foreground">
             {events.length} {events.length === 1 ? "show" : "shows"}
           </span>

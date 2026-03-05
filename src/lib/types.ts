@@ -15,6 +15,7 @@ export interface Event {
   bucket: Bucket;
   source_url: string;
   source_name: string;
+  artist_image: string | null;
 }
 
 export const BUCKET_ORDER: Bucket[] = [
