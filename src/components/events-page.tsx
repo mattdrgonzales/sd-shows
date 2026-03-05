@@ -61,17 +61,39 @@ export function EventsPage({
   const [dateSpecific, setDateSpecific] = useState<Date | undefined>(undefined);
   const [calendarOpen, setCalendarOpen] = useState(false);
 
-  // Fetch artist images client-side
+  // Fetch artist images client-side (one at a time, Vercel edge-cached)
   useEffect(() => {
     if (!artists.length) return;
-    fetch("/api/artist-images", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ artists }),
-    })
-      .then((r) => r.ok ? r.json() : {})
-      .then(setArtistImages)
-      .catch(() => {});
+    let cancelled = false;
+    const CONCURRENCY = 6;
+
+    async function fetchAll() {
+      for (let i = 0; i < artists.length; i += CONCURRENCY) {
+        if (cancelled) break;
+        const batch = artists.slice(i, i + CONCURRENCY);
+        const results = await Promise.all(
+          batch.map(async (name) => {
+            try {
+              const res = await fetch(`/api/artist-images?artist=${encodeURIComponent(name)}`);
+              if (!res.ok) return { name, image: null };
+              const data = await res.json();
+              return { name, image: data.image };
+            } catch {
+              return { name, image: null };
+            }
+          }),
+        );
+        if (cancelled) break;
+        setArtistImages((prev) => {
+          const next = { ...prev };
+          for (const r of results) next[r.name] = r.image;
+          return next;
+        });
+      }
+    }
+
+    fetchAll();
+    return () => { cancelled = true; };
   }, [artists]);
 
   // Merge images into events
