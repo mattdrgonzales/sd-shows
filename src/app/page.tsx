@@ -1,7 +1,7 @@
 import { fetchUpcomingEvents } from "@/lib/airtable";
 import { EventsPage } from "@/components/events-page";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 export default async function Home() {
   const events = await fetchUpcomingEvents();
