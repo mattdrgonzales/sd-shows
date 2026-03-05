@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CalendarIcon, X } from "lucide-react";
 import { format } from "date-fns";
 import {
@@ -54,11 +54,34 @@ export function EventsPage({
   venues: string[];
   artists: string[];
 }) {
+  const [artistImages, setArtistImages] = useState<Record<string, string | null>>({});
   const [artist, setArtist] = useState("all");
   const [venue, setVenue] = useState("all");
   const [dateQuick, setDateQuick] = useState<DateQuickPick>(null);
   const [dateSpecific, setDateSpecific] = useState<Date | undefined>(undefined);
   const [calendarOpen, setCalendarOpen] = useState(false);
+
+  // Fetch artist images client-side
+  useEffect(() => {
+    if (!artists.length) return;
+    fetch("/api/artist-images", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ artists }),
+    })
+      .then((r) => r.ok ? r.json() : {})
+      .then(setArtistImages)
+      .catch(() => {});
+  }, [artists]);
+
+  // Merge images into events
+  const eventsWithImages = useMemo(() => {
+    if (!Object.keys(artistImages).length) return events;
+    return events.map((e) => ({
+      ...e,
+      artist_image: artistImages[e.artist] ?? e.artist_image,
+    }));
+  }, [events, artistImages]);
 
   const hasFilters = artist !== "all" || venue !== "all" || dateQuick !== null || dateSpecific !== undefined;
 
@@ -81,7 +104,7 @@ export function EventsPage({
   }
 
   const filtered = useMemo(() => {
-    return events.filter((e) => {
+    return eventsWithImages.filter((e) => {
       if (artist !== "all" && e.artist !== artist) return false;
       if (venue !== "all" && e.venue !== venue) return false;
 
@@ -96,7 +119,7 @@ export function EventsPage({
 
       return true;
     });
-  }, [events, artist, venue, dateQuick, dateSpecific]);
+  }, [eventsWithImages, artist, venue, dateQuick, dateSpecific]);
 
   const grouped = useMemo(() => {
     const map = new Map<Bucket, Event[]>();
