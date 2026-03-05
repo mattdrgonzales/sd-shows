@@ -1,20 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CalendarIcon, X } from "lucide-react";
-import { format } from "date-fns";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { EventGroup } from "@/components/event-group";
 import { Header } from "@/components/header";
+import { EventGroup } from "@/components/event-group";
+import { Footer } from "@/components/footer";
 import type { Bucket, Event } from "@/lib/types";
 import { BUCKET_ORDER } from "@/lib/types";
 
@@ -39,10 +28,7 @@ function getWeekendDates(): string[] {
   sat.setDate(today.getDate() + daysToSat);
   const sun = new Date(sat);
   sun.setDate(sat.getDate() + 1);
-  return [
-    sat.toLocaleDateString("en-CA"),
-    sun.toLocaleDateString("en-CA"),
-  ];
+  return [sat.toLocaleDateString("en-CA"), sun.toLocaleDateString("en-CA")];
 }
 
 export function EventsPage({
@@ -54,17 +40,15 @@ export function EventsPage({
   venues: string[];
   artists: string[];
 }) {
-  const [artist, setArtist] = useState("all");
-  const [venue, setVenue] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [dateQuick, setDateQuick] = useState<DateQuickPick>(null);
   const [dateSpecific, setDateSpecific] = useState<Date | undefined>(undefined);
   const [calendarOpen, setCalendarOpen] = useState(false);
 
-  const hasFilters = artist !== "all" || venue !== "all" || dateQuick !== null || dateSpecific !== undefined;
+  const hasFilters = searchQuery !== "" || dateQuick !== null || dateSpecific !== undefined;
 
   function clearFilters() {
-    setArtist("all");
-    setVenue("all");
+    setSearchQuery("");
     setDateQuick(null);
     setDateSpecific(undefined);
   }
@@ -81,9 +65,13 @@ export function EventsPage({
   }
 
   const filtered = useMemo(() => {
+    const query = searchQuery.toLowerCase().trim();
     return events.filter((e) => {
-      if (artist !== "all" && e.artist !== artist) return false;
-      if (venue !== "all" && e.venue !== venue) return false;
+      if (query) {
+        const matchesArtist = e.artist.toLowerCase().includes(query);
+        const matchesVenue = e.venue.toLowerCase().includes(query);
+        if (!matchesArtist && !matchesVenue) return false;
+      }
 
       if (dateQuick === "today" && e.date !== getTodayStr()) return false;
       if (dateQuick === "tomorrow" && e.date !== getTomorrowStr()) return false;
@@ -96,7 +84,7 @@ export function EventsPage({
 
       return true;
     });
-  }, [events, artist, venue, dateQuick, dateSpecific]);
+  }, [events, searchQuery, dateQuick, dateSpecific]);
 
   const grouped = useMemo(() => {
     const map = new Map<Bucket, Event[]>();
@@ -112,113 +100,45 @@ export function EventsPage({
   }, [filtered]);
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
-      <Header />
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <Header
+        count={filtered.length}
+        dateQuick={dateQuick}
+        dateSpecific={dateSpecific}
+        calendarOpen={calendarOpen}
+        searchQuery={searchQuery}
+        hasFilters={hasFilters}
+        onQuickPick={handleQuickPick}
+        onCalendarSelect={handleCalendarSelect}
+        onCalendarOpenChange={setCalendarOpen}
+        onSearchChange={setSearchQuery}
+        onClearFilters={clearFilters}
+      />
 
-      {/* Filters */}
-      <div className="mt-6 flex flex-col gap-3">
-        {/* Dropdowns row */}
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <Select value={artist} onValueChange={setArtist}>
-            <SelectTrigger className="sm:flex-1">
-              <SelectValue placeholder="All artists" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All artists</SelectItem>
-              {artists.map((a) => (
-                <SelectItem key={a} value={a}>
-                  {a}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={venue} onValueChange={setVenue}>
-            <SelectTrigger className="sm:flex-1">
-              <SelectValue placeholder="All venues" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All venues</SelectItem>
-              {venues.map((v) => (
-                <SelectItem key={v} value={v}>
-                  {v}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Date filters row */}
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            variant={dateQuick === "today" ? "default" : "outline"}
-            size="sm"
-            onClick={() => handleQuickPick("today")}
-          >
-            Today
-          </Button>
-          <Button
-            variant={dateQuick === "tomorrow" ? "default" : "outline"}
-            size="sm"
-            onClick={() => handleQuickPick("tomorrow")}
-          >
-            Tomorrow
-          </Button>
-          <Button
-            variant={dateQuick === "weekend" ? "default" : "outline"}
-            size="sm"
-            onClick={() => handleQuickPick("weekend")}
-          >
-            Weekend
-          </Button>
-
-          <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant={dateSpecific ? "default" : "outline"}
-                size="sm"
-                className="gap-1.5"
-              >
-                <CalendarIcon className="size-4" />
-                {dateSpecific ? format(dateSpecific, "MMM d") : "Pick date"}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={dateSpecific}
-                onSelect={handleCalendarSelect}
-                defaultMonth={dateSpecific ?? new Date()}
-              />
-            </PopoverContent>
-          </Popover>
-
-          {hasFilters && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={clearFilters}
-              className="gap-1 text-muted-foreground"
-            >
-              <X className="size-3.5" />
-              Clear
-            </Button>
-          )}
-        </div>
-      </div>
-
-      {/* Events */}
-      <div className="mt-6 space-y-6">
+      <div className="mt-8 space-y-12">
         {grouped.length === 0 ? (
-          <p className="py-12 text-center text-muted-foreground">
-            No shows found.
-          </p>
+          <div className="py-24 text-center">
+            <p className="font-display text-2xl font-bold tracking-tight">NO SHOWS MATCH.</p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Try a different date or clear your filters.
+            </p>
+            {hasFilters && (
+              <button
+                onClick={clearFilters}
+                className="mt-4 cursor-pointer border border-border px-4 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground transition-colors duration-150 hover:border-foreground hover:text-foreground"
+              >
+                CLEAR FILTERS
+              </button>
+            )}
+          </div>
         ) : (
           grouped.map(({ bucket, events }) => (
             <EventGroup key={bucket} bucket={bucket} events={events} />
           ))
         )}
       </div>
+
+      <Footer />
     </div>
   );
 }

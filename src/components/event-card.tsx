@@ -1,7 +1,8 @@
+"use client";
+
 import Image from "next/image";
-import { Music, MapPin, Ticket } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Music, Ticket } from "lucide-react";
+import { motion } from "framer-motion";
 import { MusicLinks } from "@/components/music-links";
 import { VENUE_INFO } from "@/lib/venues";
 import type { Event } from "@/lib/types";
@@ -9,12 +10,14 @@ import type { Event } from "@/lib/types";
 function formatDate(dateStr: string): string {
   const [year, month, day] = dateStr.split("-").map(Number);
   const d = new Date(Date.UTC(year!, month! - 1, day));
-  return d.toLocaleDateString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    timeZone: "UTC",
-  });
+  return d
+    .toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      timeZone: "UTC",
+    })
+    .toUpperCase();
 }
 
 function ArtistInitials({ name }: { name: string }) {
@@ -25,81 +28,79 @@ function ArtistInitials({ name }: { name: string }) {
     .join("");
 
   return (
-    <div className="flex h-full w-full items-center justify-center bg-muted">
+    <div className="flex h-full w-full items-center justify-center bg-[#111111]">
       {initials ? (
-        <span className="text-lg font-semibold text-muted-foreground">
+        <span className="font-display text-3xl font-bold text-[#333333]">
           {initials}
         </span>
       ) : (
-        <Music className="size-6 text-muted-foreground" />
+        <Music className="size-8 text-[#333333]" />
       )}
     </div>
   );
 }
 
-export function EventCard({ event }: { event: Event }) {
+const cardVariants = {
+  hidden: { opacity: 0, y: 16 },
+  visible: { opacity: 1, y: 0 },
+};
+
+export function EventCard({ event, index }: { event: Event; index: number }) {
   const venueInfo = VENUE_INFO[event.venue];
 
   return (
-    <Card className="gap-0 py-0 overflow-hidden transition-colors hover:border-primary/30">
-      <CardContent className="flex gap-0 p-0">
-        {/* Artist image */}
-        <div className="relative size-20 shrink-0 sm:size-24">
-          {event.artist_image ? (
-            <Image
-              src={event.artist_image}
-              alt={event.artist}
-              fill
-              className="object-cover"
-              sizes="96px"
-            />
-          ) : (
-            <ArtistInitials name={event.artist} />
-          )}
-        </div>
+    <motion.div
+      variants={cardVariants}
+      transition={{ duration: 0.35, ease: "easeOut", delay: Math.min(index * 0.06, 0.36) }}
+      whileHover={{ y: -2 }}
+      className="group cursor-default"
+    >
+      {/* Artist image — portrait ratio */}
+      <div className="relative aspect-[3/4] overflow-hidden bg-[#111111]">
+        {event.artist_image ? (
+          <Image
+            src={event.artist_image}
+            alt={event.artist}
+            fill
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+          />
+        ) : (
+          <ArtistInitials name={event.artist} />
+        )}
+      </div>
 
-        {/* Details */}
-        <div className="flex min-w-0 flex-1 flex-col justify-between p-3">
-          <div>
-            <div className="flex items-start justify-between gap-2">
-              <h3 className="truncate text-base font-semibold leading-tight">
-                {event.artist}
-              </h3>
-              <Badge variant="secondary" className="shrink-0 text-xs">
-                {formatDate(event.date)}
-              </Badge>
-            </div>
+      {/* Info */}
+      <div className="pt-2 pb-1">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-accent-tobacco">
+          {formatDate(event.date)}
+        </p>
+        <h3 className="mt-0.5 truncate font-display text-sm font-bold leading-tight tracking-tight">
+          {event.artist}
+        </h3>
+        <a
+          href={venueInfo?.website}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-0.5 block truncate text-xs text-muted-foreground transition-colors duration-150 hover:text-accent-steel"
+        >
+          {event.venue}
+        </a>
+        <div className="mt-1.5 flex items-center justify-between">
+          <MusicLinks artist={event.artist} />
+          {event.source_url && (
             <a
-              href={venueInfo?.website}
+              href={event.source_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-1 block truncate text-sm text-muted-foreground hover:text-primary transition-colors"
+              className="inline-flex items-center gap-1 bg-accent-moss px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white transition-colors duration-150 hover:bg-[#5a9470]"
             >
-              {event.venue}
+              <Ticket className="size-3" />
+              TIX
             </a>
-            {venueInfo && (
-              <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-muted-foreground/70">
-                <MapPin className="size-3 shrink-0" />
-                {venueInfo.address}
-              </p>
-            )}
-          </div>
-          <div className="mt-2 flex items-center justify-between">
-            <MusicLinks artist={event.artist} />
-            {event.source_url && (
-              <a
-                href={event.source_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-              >
-                <Ticket className="size-3.5" />
-                Tickets
-              </a>
-            )}
-          </div>
+          )}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </motion.div>
   );
 }

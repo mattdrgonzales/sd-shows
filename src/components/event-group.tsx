@@ -1,13 +1,24 @@
-import { Separator } from "@/components/ui/separator";
+"use client";
+
+import { motion, useInView } from "framer-motion";
+import { useRef } from "react";
 import { EventCard } from "@/components/event-card";
 import type { Bucket, Event } from "@/lib/types";
 
 const BUCKET_LABELS: Record<Bucket, string> = {
-  today: "Today",
-  tomorrow: "Tomorrow",
-  "this weekend": "This Weekend",
-  "next weekend": "Next Weekend",
-  upcoming: "Upcoming",
+  today: "TODAY",
+  tomorrow: "TOMORROW",
+  "this weekend": "THIS WEEKEND",
+  "next weekend": "NEXT WEEKEND",
+  upcoming: "UPCOMING",
+};
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.06 },
+  },
 };
 
 export function EventGroup({
@@ -17,22 +28,33 @@ export function EventGroup({
   bucket: Bucket;
   events: Event[];
 }) {
+  const ref = useRef<HTMLElement>(null);
+  const isInView = useInView(ref, { once: true, margin: "-40px" });
+
   return (
-    <section>
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm py-3">
-        <h2 className="text-lg font-semibold tracking-tight">
-          <span className="text-primary">{BUCKET_LABELS[bucket]}</span>
-          <span className="ml-2 text-sm font-normal text-muted-foreground">
-            {events.length} {events.length === 1 ? "show" : "shows"}
-          </span>
+    <section ref={ref}>
+      {/* Bucket header with rule line */}
+      <div className="sticky top-[88px] z-10 flex items-center gap-3 bg-[#0A0A0A]/85 py-2 backdrop-blur-xl sm:top-[92px]">
+        <h2 className="font-display text-sm font-bold tracking-wide text-foreground">
+          {BUCKET_LABELS[bucket]}
         </h2>
-        <Separator className="mt-2" />
+        <span className="text-xs tabular-nums text-[#666666]">
+          {events.length}
+        </span>
+        <div className="bucket-rule" />
       </div>
-      <div className="grid grid-cols-1 gap-3 pt-2 sm:grid-cols-2">
-        {events.map((event) => (
-          <EventCard key={event.event_id} event={event} />
+
+      {/* Card grid */}
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate={isInView ? "visible" : "hidden"}
+        className="grid grid-cols-2 gap-x-2 gap-y-6 pt-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+      >
+        {events.map((event, i) => (
+          <EventCard key={event.event_id} event={event} index={i} />
         ))}
-      </div>
+      </motion.div>
     </section>
   );
 }

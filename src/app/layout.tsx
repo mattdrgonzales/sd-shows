@@ -1,16 +1,23 @@
 import type { Metadata } from "next";
-import { DM_Sans } from "next/font/google";
+import { Inter, Oswald } from "next/font/google";
 import "./globals.css";
 
-const dmSans = DM_Sans({
-  variable: "--font-dm-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
+  weight: ["400", "500", "600"],
+});
+
+const oswald = Oswald({
+  variable: "--font-oswald",
+  subsets: ["latin"],
+  weight: ["600", "700"],
 });
 
 export const metadata: Metadata = {
-  title: "SD Shows — San Diego Live Music",
+  title: "SD SHOWS — Live Music in San Diego",
   description:
-    "Upcoming live music shows across San Diego venues. Search artists, find tickets, and listen on Spotify, Apple Music, and YouTube.",
+    "Your curated guide to live music across San Diego. Find shows, listen to artists, get tickets.",
 };
 
 export default function RootLayout({
@@ -20,7 +27,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body className={`${dmSans.variable} font-sans antialiased`}>
+      <body className={`${inter.variable} ${oswald.variable} font-sans antialiased`}>
         {children}
       </body>
     </html>

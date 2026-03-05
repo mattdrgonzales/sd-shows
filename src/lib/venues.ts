@@ -52,4 +52,16 @@ export const VENUE_INFO: Record<string, VenueInfo> = {
     address: "Waterfront Park, 1600 Pacific Hwy, San Diego, CA 92101",
     website: "https://www.crssdfest.com",
   },
+  "Insomniac": {
+    address: "San Diego, CA",
+    website: "https://www.insomniac.com",
+  },
+  "Rich's": {
+    address: "1051 University Ave, San Diego, CA 92103",
+    website: "https://www.richssandiego.com",
+  },
+  "Brass Rail": {
+    address: "3796 Fifth Ave, San Diego, CA 92103",
+    website: "https://www.thebrassrailsd.com",
+  },
 };
