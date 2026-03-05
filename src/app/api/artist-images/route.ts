@@ -5,13 +5,15 @@ const SPOTIFY_SEARCH_URL = "https://api.spotify.com/v1/search";
 
 let cachedToken: { token: string; expiresAt: number } | null = null;
 
-async function getToken(): Promise<string | null> {
+async function getToken(): Promise<{ token: string | null; error?: string }> {
   const clientId = process.env.SPOTIFY_CLIENT_ID;
   const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
-  if (!clientId || !clientSecret) return null;
+  if (!clientId || !clientSecret) {
+    return { token: null, error: `missing_creds: id=${!!clientId} secret=${!!clientSecret}` };
+  }
 
   if (cachedToken && Date.now() < cachedToken.expiresAt - 60_000) {
-    return cachedToken.token;
+    return { token: cachedToken.token };
   }
 
   const res = await fetch(SPOTIFY_TOKEN_URL, {
@@ -23,22 +25,33 @@ async function getToken(): Promise<string | null> {
     body: "grant_type=client_credentials",
   });
 
-  if (!res.ok) return null;
+  if (!res.ok) {
+    const body = await res.text();
+    return { token: null, error: `token_failed: ${res.status} ${body}` };
+  }
+
   const data = await res.json();
   cachedToken = { token: data.access_token, expiresAt: Date.now() + data.expires_in * 1000 };
-  return cachedToken.token;
+  return { token: cachedToken.token };
 }
 
 export async function GET(req: NextRequest) {
   const artist = req.nextUrl.searchParams.get("artist");
+  const debug = req.nextUrl.searchParams.has("debug");
+
   if (!artist) {
     return NextResponse.json({ error: "artist param required" }, { status: 400 });
   }
 
-  const token = await getToken();
+  const { token, error } = await getToken();
+
+  if (debug) {
+    return NextResponse.json({ hasToken: !!token, error: error ?? null });
+  }
+
   if (!token) {
     return NextResponse.json({ image: null }, {
-      headers: { "Cache-Control": "public, s-maxage=3600" },
+      headers: { "Cache-Control": "public, s-maxage=60" },
     });
   }
 
